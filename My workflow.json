@@ -1,0 +1,662 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "erp-command",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -112,
+        144
+      ],
+      "id": "f5463c85-9f8f-4e15-89d6-e89db843a786",
+      "name": "Webhook",
+      "webhookId": "fc535ec0-579e-4726-8680-0c07b2c1a9b0"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/api/resource/POS%20Invoice",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "erpNextApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"name\", \"customer_name\", \"posting_date\", \"posting_time\", \"grand_total\", \"status\", \"currency\"]"
+            },
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        368,
+        -160
+      ],
+      "id": "bb181a6e-c3bc-40ad-b958-2ba7b208b013",
+      "name": "HTTP Request",
+      "credentials": {
+        "erpNextApi": {
+          "id": "dNl1LflBz9IEdPdY",
+          "name": "ERPNext account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ text: $('Code in JavaScript').first().json.balasan_bot }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        704,
+        -160
+      ],
+      "id": "607559b1-f8bf-4af5-a61d-1d3ebf6716bc",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil data\n// Pastikan node sebelumnya bernama \"HTTP Request\"\nconst invoices = $('HTTP Request').first().json.data;\n\nconst formatRupiah = (angka) => {\n  return new Intl.NumberFormat('id-ID').format(angka);\n};\n\n// 2. Judul Pesan\nlet pesan = \"📊 **LAPORAN TRANSAKSI TERAKHIR**\\n\";\npesan += \"==============================\\n\";\n\n// 3. Batas Aman Discord (sisakan ruang untuk footer)\nconst BATAS_MAX = 1900; \n\nif (invoices && invoices.length > 0) {\n  for (let i = 0; i < invoices.length; i++) {\n    const inv = invoices[i];\n    \n    // Siapkan teks per item dulu\n    let itemText = \"\";\n    let iconStatus = inv.status === 'Paid' ? '✅' : '⏳';\n    if (inv.status === 'Overdue') iconStatus = '🔴';\n    \n    itemText += `**${i + 1}. ${inv.name}**\\n`;\n    itemText += `👤 ${inv.customer_name}\\n`;\n    // Kita persingkat format tanggal agar hemat karakter\n    itemText += `📅 ${inv.posting_date} | 💰 Rp ${formatRupiah(inv.grand_total)}\\n`;\n    itemText += `Status: ${iconStatus} ${inv.status}\\n`;\n    itemText += \"------------------------------\\n\";\n\n    // 4. CEK PANJANG KARAKTER SEBELUM DITAMBAHKAN\n    // Jika pesan saat ini + pesan baru > 1900, BERHENTI.\n    if ((pesan.length + itemText.length) > BATAS_MAX) {\n      pesan += \"\\n⚠️ _...dan data lainnya (terpotong batas Discord)_\";\n      break; // Keluar dari looping paksa\n    }\n\n    // Jika muat, masukkan ke pesan utama\n    pesan += itemText;\n  }\n} else {\n  pesan = \"⚠️ Tidak ada data transaksi ditemukan.\";\n}\n\npesan += \"\\n*Bot ERPNext Assistant*\";\n\nreturn {\n  json: {\n    balasan_bot: pesan\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        -160
+      ],
+      "id": "412fc05a-2392-48c8-b2dd-ffe1d64ec5af",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.content }}",
+                    "rightValue": "!tes",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    },
+                    "id": "4465efc2-3de9-4859-b527-1e5a78ddabfc"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "987679f5-908d-4eb4-a6c4-f4a9c558a907",
+                    "leftValue": "={{ $json.body.content }}",
+                    "rightValue": "!stok",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c6d50a25-1f7c-49be-869e-534650d8b3c0",
+                    "leftValue": "={{ $json.body.content }}",
+                    "rightValue": "!harga",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "c6809444-2288-49d3-a0db-e1bdbcdba745",
+                    "leftValue": "={{ $json.body.content }}",
+                    "rightValue": "page_",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 3
+                },
+                "conditions": [
+                  {
+                    "id": "1963803e-efca-4183-ab18-5d2beb4f336f",
+                    "leftValue": "={{ $json.body.content }}",
+                    "rightValue": "!top",
+                    "operator": {
+                      "type": "string",
+                      "operation": "startsWith"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.4,
+      "position": [
+        80,
+        96
+      ],
+      "id": "18d1b8f9-caf2-4742-a9e8-c4ad5bd1a1e1",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/api/resource/Bin",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "erpNextApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"item_code\", \"warehouse\", \"actual_qty\"]"
+            },
+            {
+              "name": "filters",
+              "value": "[[\"actual_qty\", \">\", 0]]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        368,
+        32
+      ],
+      "id": "d0a0836f-deac-435d-bdf7-1e7b16e2d73c",
+      "name": "HTTP Request1",
+      "credentials": {
+        "erpNextApi": {
+          "id": "dNl1LflBz9IEdPdY",
+          "name": "ERPNext account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Ambil data dari node HTTP Request sebelumnya\n// Pastikan nama node di dalam kurung $('...') sesuai dengan nama node HTTP Anda\nconst items = $('HTTP Request1').first().json.data;\n\nlet pesan = \"📦 **INFO STOK GUDANG (BIN)**\\n====================\\n\";\n\nif (items && items.length > 0) {\n  items.forEach((item) => {\n    // Di tabel Bin, kita panggil item_code dan warehouse\n    pesan += `🔹 **${item.item_code}**\\n`;\n    pesan += `📍 Gudang: ${item.warehouse}\\n`;\n    \n    // Format stok\n    let qty = item.actual_qty || 0;\n    pesan += `Sisa Stok: **${qty}** Unit\\n`;\n    pesan += \"--------------------\\n\";\n  });\n} else {\n  pesan = \"⚠️ Stok kosong atau tidak ditemukan.\";\n}\n\nreturn {\n  json: {\n    balasan_stok: pesan\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        32
+      ],
+      "id": "942bfa73-8a88-4d43-b5bf-ceb1bc6f074c",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ text: $('Code in JavaScript1').first().json.balasan_stok }) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        704,
+        32
+      ],
+      "id": "967bc9d8-2c57-48dd-92e0-aa95eb052c4e",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const content = $('Webhook').first().json.body.content; \nlet barang = \"\";\n\n// Cek apakah ini dari Tombol (page_...) atau Chat (!harga...)\nif (content.startsWith('page_')) {\n    // Format tombol: \"page_2|kabel\" atau \"page_2|all\"\n    barang = content.split('|')[1] || \"\";\n    \n    // PENTING: Jika kata kuncinya \"all\", kita kosongkan agar mencari semua barang\n    if (barang === \"all\") barang = \"\";\n    \n} else {\n    // Format chat: \"!harga kabel\" (7 huruf pertama dibuang)\n    barang = content.substring(7);\n}\n\nreturn {\n    json: {\n        cari: barang // Hasilnya bersih, siap masuk ke HTTP Request\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        368,
+        224
+      ],
+      "id": "219ee399-561f-41f6-91f8-52bb5c478cb5",
+      "name": "Code in JavaScript3"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/api/resource/Item Price",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "erpNextApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "filters",
+              "value": "=[[\"item_name\", \"like\", \"%{{ $json.cari }}%\"], [\"price_list\", \"=\", \"Standard Selling\"]]"
+            },
+            {
+              "name": "fields",
+              "value": "[\"item_name\", \"price_list_rate\"]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        576,
+        224
+      ],
+      "id": "d6b028a0-ce7a-47aa-9188-a622a70b687b",
+      "name": "HTTP Request3",
+      "credentials": {
+        "erpNextApi": {
+          "id": "dNl1LflBz9IEdPdY",
+          "name": "ERPNext account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil Data\nconst rawResponse = $('HTTP Request3').first().json;\nlet listBarang = rawResponse.data ? rawResponse.data : $('HTTP Request3').all().map(i => i.json);\n\nif (!listBarang || listBarang.length === 0) {\n    return { json: { pesan: \"❌ Barang tidak ditemukan.\", hasNext: false, hasPrev: false } };\n}\n\n// 2. LOGIKA HALAMAN\nconst pesanAsli = $('Webhook').first().json.body.content; \nlet page = 1;\n\nif (pesanAsli && pesanAsli.startsWith('page_')) {\n    const bagianDepan = pesanAsli.split('|')[0]; \n    page = parseInt(bagianDepan.replace('page_', ''));\n}\n\n// --- SETTING JUMLAH BARANG ---\nconst limit = 5; \n// -----------------------------\n\nconst startIndex = (page - 1) * limit; \nconst endIndex = startIndex + limit;     \n\n// Ambil 5 barang sesuai halaman\nconst displayItems = listBarang.slice(startIndex, endIndex);\n\n// 3. SUSUN PESAN\nlet header = page === 1 ? `🏷️ **DITEMUKAN ${listBarang.length} BARANG:**` : `📄 **HALAMAN ${page}** (Total ${listBarang.length} Barang):`;\nlet pesan = `${header}\\n\\n`;\n\nfor (let i = 0; i < displayItems.length; i++) {\n    const b = displayItems[i];\n    const nama = b.item_name || \"Tanpa Nama\";\n    const harga = b.price_list_rate ? new Intl.NumberFormat('id-ID').format(b.price_list_rate) : \"0\";\n    pesan += `🔹 **${nama}** : Rp ${harga}\\n`;\n}\n\n// 4. LOGIKA TOMBOL (PREV & NEXT)\nconst hasNext = listBarang.length > endIndex; // Masih ada sisa?\nconst hasPrev = page > 1;                     // Bukan halaman 1?\n\n// Ambil query pencarian (agar tombol tetap ingat kita cari apa)\nconst currentQuery = $('Code in JavaScript3').first().json.cari || \"all\";\n\nreturn {\n    json: {\n        pesan: pesan,\n        hasNext: hasNext,\n        hasPrev: hasPrev,\n        // ID Tombol Next (Maju 1 Halaman)\n        nextPageId: `page_${page + 1}|${currentQuery}`,\n        // ID Tombol Prev (Mundur 1 Halaman)\n        prevPageId: `page_${page - 1}|${currentQuery}`\n    }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        784,
+        224
+      ],
+      "id": "f0f98f0d-04ff-455b-9c3c-49664deff574",
+      "name": "Code in JavaScript4"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{\n  (function() {\n    const input = $('Code in JavaScript4').first().json;\n    \n    // Siapkan Pesan\n    const response = {\n      \"text\": input.pesan,      \n      \"content\": input.pesan    \n    };\n\n    // Siapkan Wadah Tombol (Array kosong dulu)\n    let buttons = [];\n\n    // 1. Jika Bisa Mundur (Prev), Tambah Tombol Kiri\n    if (input.hasPrev) {\n      buttons.push({\n        \"type\": 2,          // Button\n        \"style\": 2,         // Warna Abu-abu (Secondary) biar beda sama Next\n        \"label\": \"⬅️ Prev\",\n        \"custom_id\": input.prevPageId\n      });\n    }\n\n    // 2. Jika Bisa Maju (Next), Tambah Tombol Kanan\n    if (input.hasNext) {\n      buttons.push({\n        \"type\": 2,          // Button\n        \"style\": 1,         // Warna Biru (Primary)\n        \"label\": \"Next ➡️\",\n        \"custom_id\": input.nextPageId\n      });\n    }\n\n    // Jika ada tombol (salah satu atau keduanya), pasang ke pesan\n    if (buttons.length > 0) {\n      response.components = [\n        {\n          \"type\": 1, // Action Row\n          \"components\": buttons\n        }\n      ];\n    }\n\n    return response;\n  })()\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        992,
+        224
+      ],
+      "id": "55b66ee8-3986-49c1-a514-399f3bac9dfc",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:8000/api/resource/Item",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "erpNextApi",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "fields",
+              "value": "[\"item_name\", \"standard_rate\", \"item_code\"]"
+            },
+            {
+              "name": "order_by",
+              "value": "standard_rate desc"
+            },
+            {
+              "name": "limit_page_length",
+              "value": "5"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        368,
+        384
+      ],
+      "id": "58440c64-bace-45f2-8c0f-98d1d964cb77",
+      "name": "HTTP Request4",
+      "credentials": {
+        "erpNextApi": {
+          "id": "dNl1LflBz9IEdPdY",
+          "name": "ERPNext account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $('HTTP Request4').first().json.data;\nlet pesan = \"🏆 **TOP 5 PRODUK SULTAN**\\n=================\\n\";\n\nfor(let i=0; i<items.length; i++) {\n   const brg = items[i];\n   \n   // Langsung masukan nama dan kode saja (tanpa harga)\n   pesan += `**${i+1}. ${brg.item_name}**\\nKode: ${brg.item_code}\\n\\n`;\n}\n\nreturn { json: { pesan_bot: pesan } };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        384
+      ],
+      "id": "ebd27ded-587a-4e49-96cc-9f99993d0a45",
+      "name": "Code in JavaScript5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/1450376409267699867/e62fB_rwBkYe19KPCsFmIO7QV5cpjlUFTHdNGpdw-UKDE6uiQ6ASNnQ1hDFOHT2fohP-",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.pesan_bot }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        784,
+        384
+      ],
+      "id": "63510d08-cb37-42f6-9d61-5ce8e9ce66bc",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "info-penjualan",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -256,
+        544
+      ],
+      "id": "4de84c7f-20f7-4f4c-bdeb-fcd331e16095",
+      "name": "Webhook1",
+      "webhookId": "66d3062b-a0b6-43c2-aef7-287d729b264f"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil data dari node Webhook1\n// PENTING: Pastikan nama di dalam $('...') sama persis dengan nama node di kiri\nconst data = $('Webhook1').first().json.body;\n\n// 2. Format Angka Rupiah\nconst rupiah = (angka) => new Intl.NumberFormat('id-ID').format(angka);\n\n// 3. Susun Pesan\nlet pesan = \"💰 **PENJUALAN BARU!**\\n\";\n\n// Cek apakah data ada isinya sebelum menyusun pesan\nif (data && data.name) {\n    pesan += `No: **${data.name}**\\n`;\n    pesan += `Cust: ${data.customer_name}\\n`;\n    pesan += `Total: **Rp ${rupiah(data.grand_total)}**\\n`;\n    pesan += `Status: ${data.status}\\n`;\n} else {\n    pesan += \"⚠️ Data kosong. Cek settingan Webhook ERPNext.\";\n}\n\npesan += \"--------------------\";\n\nreturn {\n  json: {\n    pesan_discord: pesan\n  }\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -48,
+        544
+      ],
+      "id": "e9286339-061c-4c32-9d08-b00d85653b58",
+      "name": "Code in JavaScript2"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://discord.com/api/webhooks/1450376409267699867/e62fB_rwBkYe19KPCsFmIO7QV5cpjlUFTHdNGpdw-UKDE6uiQ6ASNnQ1hDFOHT2fohP-",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "content",
+              "value": "={{ $json.pesan_discord }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        160,
+        544
+      ],
+      "id": "563420a2-3367-44a9-921d-02911e41d69c",
+      "name": "HTTP Request2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code in JavaScript3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "HTTP Request4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript3": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request3": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript4": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request4": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript5": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook1": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "a78fcdbe-cb54-4242-a7ad-871d28854196",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "67f85b08b803642c9d906829013e1aa7f926553bf98b601be3563d9b2f957d83"
+  },
+  "id": "l4vRy8LTCplB3gV2",
+  "tags": []
+}
